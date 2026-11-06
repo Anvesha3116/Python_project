@@ -227,7 +227,11 @@ class App:
         r.title("SignBridge - Indian Sign Language Recognition")
         r.configure(bg=BG, highlightthickness=4,
             highlightbackground=ACCENT, highlightcolor=ACCENT)
-        r.resizable(False, False)
+        r.resizable(True, True)
+        r.minsize(900, 620)
+        r.state("zoomed")   # start maximized (Windows)
+        r.bind("<F11>", lambda e: r.attributes("-fullscreen",
+                                               not r.attributes("-fullscreen")))
 
         style = ttk.Style()
         style.theme_use("clam")
@@ -251,15 +255,18 @@ class App:
         self.status_lbl.pack(side="right", padx=10)
 
         body = tk.Frame(r, bg=BG)
-        body.pack(padx=14, pady=(0, 10))
+        body.pack(padx=14, pady=(0, 10), fill="both", expand=True)
+        body.columnconfigure(0, weight=1)
+        body.rowconfigure(0, weight=1)
 
         # left: video
         self.canvas = tk.Canvas(body, width=VIDEO_W, height=VIDEO_H, bg="black",
                                 highlightthickness=3, highlightbackground=ACCENT)
-        self.canvas.grid(row=0, column=0, sticky="n")
+        self.canvas.grid(row=0, column=0, sticky="nsew")
         self.img_id = self.canvas.create_image(VIDEO_W // 2, VIDEO_H // 2)
         self.idle_id = self.canvas.create_text(VIDEO_W // 2, VIDEO_H // 2, fill=MUTED,
                                                font=("Segoe UI", 14), text="")
+        self.canvas.bind("<Configure>", self._on_canvas_resize)
 
         # right: panels
         side = tk.Frame(body, bg=BG)
@@ -414,10 +421,16 @@ class App:
             return
         self.root.after(10, self._loop)
 
+    def _on_canvas_resize(self, event):
+        self.canvas.coords(self.img_id, event.width // 2, event.height // 2)
+        self.canvas.coords(self.idle_id, event.width // 2, event.height // 2)
+
     # ---- drawing on the canvas ------------------------------------------
     def _show_frame(self, frame):
         h, w = frame.shape[:2]
-        scale = min(VIDEO_W / w, VIDEO_H / h)
+        cw = max(self.canvas.winfo_width(), 100)
+        ch = max(self.canvas.winfo_height(), 100)
+        scale = min(cw / w, ch / h)
         nw, nh = int(w * scale), int(h * scale)
         rgb = cv2.cvtColor(cv2.resize(frame, (nw, nh)), cv2.COLOR_BGR2RGB)
         # Tk can read a raw PPM image directly, so no extra imaging library is needed.
