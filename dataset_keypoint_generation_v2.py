@@ -1,17 +1,3 @@
-"""
-Builds keypoint.csv from the full ISL image dataset using the NEW MediaPipe
-Tasks API (same API as isl_detection_v2.py), so it works with current mediapipe.
-
-Expected folder layout (folder name = label):
-    images/data/A/*.jpg
-    images/data/B/*.jpg
-    ...
-    images/data/Z/*.jpg
-    images/data/1/*.jpg ... images/data/9/*.jpg
-
-Run:  python dataset_keypoint_generation_v2.py
-Output: keypoint.csv  (overwritten, not appended)
-"""
 import os
 import sys
 import csv

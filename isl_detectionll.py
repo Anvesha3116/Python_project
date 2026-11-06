@@ -26,7 +26,7 @@ HAND_MODEL_URL = ("https://storage.googleapis.com/mediapipe-models/hand_landmark
                   "hand_landmarker/float16/1/hand_landmarker.task")
 
 NUM_HANDS = 2                      # each visible hand is classified on its own
-VIDEO_W, VIDEO_H = 480, 360        # size of the video area in the window
+VIDEO_W, VIDEO_H = 560, 420       # size of the video area in the window
 
 # The model outputs a class number; this list turns it back into a character.
 # The order must match the order used when the model was trained.
@@ -39,14 +39,16 @@ HAND_CONNECTIONS = [
     (15, 16), (13, 17), (17, 18), (18, 19), (19, 20), (0, 17),
 ]
 
-# Colours (dark theme with a gold accent, matching the presentation deck)
-BG = "#161616"
-PANEL = "#232323"
-FG = "#ecebe4"
-MUTED = "#8d8b84"
-ACCENT = "#d4a23a"
-GOOD = "#6fbf73"
-BAD = "#e0605a"
+BG = "#f6e9d2"       
+PANEL = "#fdf6e7"   
+INSET = "#f1e2c8"    
+PLUM = "#f9d3da"     
+FG = "#5a2a3a"       
+PINK = "#ec5b78"      
+MUTED = "#a0687a"     
+ACCENT = "#d9a22b"    
+GOOD = "#6fa86f"
+BAD = "#c9184a"
 
 Hand = namedtuple("Hand", "points label conf")
 
@@ -182,17 +184,16 @@ class SignEngine:
         self.detector.close()
 
 
-def draw_hand(frame, hand, label_colour=(58, 162, 212)):
+def draw_hand(frame, hand, label_colour=(45, 176, 251)):
     """Draw the skeleton and the predicted letter on the frame (BGR colours)."""
     for a, b in HAND_CONNECTIONS:
-        cv2.line(frame, hand.points[a], hand.points[b], (0, 255, 0), 2)
+        cv2.line(frame, hand.points[a], hand.points[b], (187, 156, 244), 2)   
     for p in hand.points:
-        cv2.circle(frame, p, 4, (0, 0, 255), -1)
+        cv2.circle(frame, p, 4, (74, 24, 201), -1)                           
     x = min(p[0] for p in hand.points)
     y = max(min(p[1] for p in hand.points) - 12, 24)
     cv2.putText(frame, f"{hand.label}  {hand.conf * 100:.0f}%", (x, y),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.9, label_colour, 2)
-
+                cv2.FONT_HERSHEY_SIMPLEX, 0.9, label_colour, 2)             
 
 # ---------------------------------------------------------------------------
 # 5. App: the Tkinter window
@@ -224,20 +225,21 @@ class App:
     def _build_ui(self):
         r = self.root
         r.title("SignBridge - Indian Sign Language Recognition")
-        r.configure(bg=BG)
+        r.configure(bg=BG, highlightthickness=4,
+            highlightbackground=ACCENT, highlightcolor=ACCENT)
         r.resizable(False, False)
 
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Gold.Horizontal.TProgressbar", troughcolor="#2e2e2e",
-                        background=ACCENT, bordercolor=PANEL,
+        style.configure("Gold.Horizontal.TProgressbar", troughcolor=INSET,
+                        background=ACCENT, bordercolor=ACCENT,
                         lightcolor=ACCENT, darkcolor=ACCENT)
 
         # header
         header = tk.Frame(r, bg=BG)
         header.pack(fill="x", padx=14, pady=(10, 6))
-        tk.Label(header, text="SignBridge", bg=BG, fg=FG,
-                 font=("Georgia", 20, "italic", "bold")).pack(side="left")
+        tk.Label(header, text="SignBridge", bg=BG, fg=PINK,
+         font=("Georgia", 20, "italic", "bold")).pack(side="left")
 
         # controls live at the top so they are always visible
         self._button(header, "Quit", self.on_close).pack(side="right")
@@ -253,7 +255,7 @@ class App:
 
         # left: video
         self.canvas = tk.Canvas(body, width=VIDEO_W, height=VIDEO_H, bg="black",
-                                highlightthickness=1, highlightbackground="#333")
+                                highlightthickness=3, highlightbackground=ACCENT)
         self.canvas.grid(row=0, column=0, sticky="n")
         self.img_id = self.canvas.create_image(VIDEO_W // 2, VIDEO_H // 2)
         self.idle_id = self.canvas.create_text(VIDEO_W // 2, VIDEO_H // 2, fill=MUTED,
@@ -282,7 +284,7 @@ class App:
 
         # card: text
         card = self._card(side, "TEXT")
-        self.text_lbl = tk.Label(card, text="", bg="#1a1a1a", fg=FG, anchor="nw",
+        self.text_lbl = tk.Label(card, text="", bg=INSET, fg=FG, anchor="nw",
                                  justify="left", wraplength=260, width=30, height=2,
                                  font=("Consolas", 13), padx=8, pady=4)
         self.text_lbl.pack(fill="x")
@@ -296,7 +298,7 @@ class App:
         # card: settings
         card = self._card(side, "SETTINGS")
         tk.Checkbutton(card, text="Show hand skeleton", variable=self.show_skeleton,
-                       bg=PANEL, fg=FG, selectcolor="#2e2e2e", activebackground=PANEL,
+                       bg=PANEL, fg=FG, selectcolor=INSET, activebackground=PANEL,
                        activeforeground=FG, takefocus=0, font=("Segoe UI", 10)).pack(anchor="w")
         self._slider(card, "Hold time (seconds)", self.hold_var, 0.4, 3.0, 0.1)
         self._slider(card, "Minimum confidence", self.conf_var, 0.30, 0.95, 0.05)
@@ -309,14 +311,16 @@ class App:
         r.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def _card(self, parent, title):
-        frame = tk.Frame(parent, bg=PANEL, padx=12, pady=6)
+        frame = tk.Frame(parent, bg=PANEL, padx=12, pady=6,
+                         highlightthickness=2, highlightbackground=ACCENT,
+                         highlightcolor=ACCENT)
         frame.pack(fill="x", pady=(0, 6))
         tk.Label(frame, text=title, bg=PANEL, fg=MUTED,
                  font=("Segoe UI", 9, "bold")).pack(anchor="w")
         return frame
 
     def _button(self, parent, text, command, accent=False, wide=False):
-        bg, fg = (ACCENT, "#1a1a1a") if accent else ("#333333", FG)
+        bg, fg = (ACCENT, FG) if accent else (PLUM, FG)
         btn = tk.Button(parent, text=text, command=command, bg=bg, fg=fg,
                         activebackground=bg, activeforeground=fg, relief="flat",
                         bd=0, takefocus=0, cursor="hand2",
@@ -328,9 +332,10 @@ class App:
         tk.Label(parent, text=label, bg=PANEL, fg=MUTED,
                  font=("Segoe UI", 9)).pack(anchor="w", pady=(2, 0))
         tk.Scale(parent, from_=lo, to=hi, resolution=step, orient="horizontal",
-                 variable=var, bg=PANEL, fg=FG, troughcolor="#2e2e2e",
+                 variable=var, bg=PANEL, fg=PINK, troughcolor=INSET,
                  highlightthickness=0, bd=0, length=270, takefocus=0,
-                 activebackground=ACCENT).pack(anchor="w")
+                 activebackground=PINK, sliderrelief="flat",
+                 sliderlength=24, width=14).pack(anchor="w")
 
     # ---- start-up --------------------------------------------------------
     def _init_engine(self):
